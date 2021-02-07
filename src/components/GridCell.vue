@@ -4,6 +4,7 @@
     @click.exact="$emit('click')"
     @click.ctrl.exact="$emit('ctrlClick')"
     @click.alt.exact="$emit('altClick')"
+    @mouseover.exact="$emit('mouseover')"
   >
     {{ data.coordinates }}
   </div>
@@ -46,6 +47,9 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+
+  cursor: pointer;
+  user-select: none;
 
   background: white;
   border: 1px solid #ccc;

@@ -1,5 +1,9 @@
 <template>
-  <div class="Grid">
+  <div
+    class="Grid"
+    @mousedown="$emit('mousedown')"
+    @mouseup="$emit('mouseup')"
+  >
     <GridCell
       :data="gridCell"
       v-for="gridCell in flatGrid"
@@ -7,6 +11,7 @@
       @click="$emit('click', gridCell)"
       @ctrlClick="$emit('ctrlClick', gridCell)"
       @altClick="$emit('altClick', gridCell)"
+      @mouseover="handleMouseOver(gridCell)"
     />
   </div>
 </template>
@@ -23,6 +28,11 @@ export default {
     grid: {
       type: Array,
       required: true,
+    },
+
+    mouseDown: {
+      type: Boolean,
+      default: false,
     },
   },
 
@@ -42,6 +52,14 @@ export default {
       return {};
     },
   },
+
+  methods: {
+    handleMouseOver(cell) {
+      if (this.mouseDown) {
+        this.$emit('click', cell);
+      }
+    },
+  },
 };
 </script>
 
@@ -50,8 +68,5 @@ export default {
   display: grid;
   grid-template-columns: repeat(20, 50px);
   grid-template-rows: repeat(20, 50px);
-  // align-content: center;
-  // align-items: center;
-  // justify-content: center;
 }
 </style>
