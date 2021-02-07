@@ -54,6 +54,8 @@ export default {
   background: white;
   border: 1px solid #ccc;
 
+  transition: background 300ms, border 300ms, color 300ms;
+
   &--wall {
     background: black;
     color: white;
