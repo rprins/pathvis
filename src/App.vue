@@ -3,6 +3,10 @@
     <div class="debug">
       startCell: {{ startCell }}<br />
       endCell: {{ endCell }} <br />
+      <br />
+      <span @click="dijkstra">Start Dijkstra</span>
+      <br /><br />
+      <div>Result message: {{ resultMessage }}</div>
     </div>
 
     <Grid
@@ -37,6 +41,8 @@ export default {
 
       mouseDown: false,
       mouseDownInitialCellTile: '',
+
+      resultMessage: '',
     };
   },
 
@@ -48,22 +54,22 @@ export default {
     init() {
       let grid = [];
 
-      for (let ii = 0; ii < this.gridWidth; ii++) {
+      for (let yy = 0; yy < this.gridHeight; yy++) {
         let subGrid = [];
-        for (let jj = 0; jj < this.gridHeight; jj++) {
+        for (let xx = 0; xx < this.gridWidth; xx++) {
           subGrid.push({
             tile: 'NONE',
-            coordinates: `${ii},${jj}`,
+            coordinates: `${xx},${yy}`,
           });
         }
 
         grid.push(subGrid);
       }
 
-      this.setStartCell(grid[9][2]);
-      this.setEndCell(grid[9][17]);
-
       this.grid = grid;
+
+      this.setStartCell(this.getCell(2, 9));
+      this.setEndCell(this.getCell(17, 9));
     },
 
     handleCellClick(cell) {
@@ -124,7 +130,7 @@ export default {
     },
 
     resetCell(coordinates) {
-      this.grid[coordinates[0]][coordinates[1]].tile = 'NONE';
+      this.getCell(coordinates[0], coordinates[1]).tile = 'NONE';
     },
 
     setStartCell(cell) {
@@ -144,6 +150,116 @@ export default {
     handleMouseUp() {
       this.mouseDown = false;
       this.mouseDownInitialCellTile = '';
+    },
+
+    getCell(x, y) {
+      return this.grid[y][x];
+    },
+
+    dijkstra() {
+      /*
+        Let the node at which we are starting be called the initial node. Let the distance of node Y be the distance from the initial node to Y. Dijkstra's algorithm will assign some initial distance values and will try to improve them step by step.
+
+        1. Mark all nodes unvisited. Create a set of all the unvisited nodes called the unvisited set.
+        2. Assign to every node a tentative distance value: set it to zero for our initial node and to infinity for all other nodes. Set the initial node as current.[16]
+        3. For the current node, consider all of its unvisited neighbours and calculate their tentative distances through the current node. Compare the newly calculated tentative distance to the current assigned value and assign the smaller one. For example, if the current node A is marked with a distance of 6, and the edge connecting it with a neighbour B has length 2, then the distance to B through A will be 6 + 2 = 8. If B was previously marked with a distance greater than 8 then change it to 8. Otherwise, the current value will be kept.
+        4. When we are done considering all of the unvisited neighbours of the current node, mark the current node as visited and remove it from the unvisited set. A visited node will never be checked again.
+        5. If the destination node has been marked visited (when planning a route between two specific nodes) or if the smallest tentative distance among the nodes in the unvisited set is infinity (when planning a complete traversal; occurs when there is no connection between the initial node and remaining unvisited nodes), then stop. The algorithm has finished.
+        6. Otherwise, select the unvisited node that is marked with the smallest tentative distance, set it as the new "current node", and go back to step 3.
+        7. When planning a route, it is actually not necessary to wait until the destination node is "visited" as above: the algorithm can stop once the destination node has the smallest tentative distance among all "unvisited" nodes (and thus could be selected as the next "current").
+      */
+      if (this.startCell === '') return;
+
+      const DISTANCE = 999999;
+
+      let unvisited = [];
+      this.grid.forEach(gridRow => {
+        let subGrid = [];
+        gridRow.forEach(gridCell => {
+          subGrid.push({
+            coordinates: gridCell.coordinates,
+            unvisited: gridCell.tile !== 'WALL',
+            distance: DISTANCE,
+          });
+        });
+        unvisited.push(subGrid);
+      });
+
+      const startCoordinates = this.startCell.split(',');
+      let x = parseInt(startCoordinates[0]);
+      let y = parseInt(startCoordinates[1]);
+      let current = unvisited[y][x];
+      current.distance = 0;
+
+      const calculateDistance = (current, x, y) => {
+        let top = null;
+        let right = null;
+        let bottom = null;
+        let left = null;
+
+        if (y - 1 > -1) top = unvisited[y - 1][x];
+        if (x + 1 < this.gridWidth) right = unvisited[y][x + 1];
+        if (y + 1 < this.gridHeight) bottom = unvisited[y + 1][x];
+        if (x - 1 > -1) left = unvisited[y][x - 1];
+
+        if (top && top.unvisited) {
+          let newDistance = current.distance + 1;
+          if (newDistance < top.distance) {
+            top.distance = newDistance;
+          }
+        }
+        if (right && right.unvisited) {
+          let newDistance = current.distance + 1;
+          if (newDistance < right.distance) {
+            right.distance = newDistance;
+          }
+        }
+        if (bottom && bottom.unvisited) {
+          let newDistance = current.distance + 1;
+          if (newDistance < bottom.distance) {
+            bottom.distance = newDistance;
+          }
+        }
+        if (left && left.unvisited) {
+          let newDistance = current.distance + 1;
+          if (newDistance < left.distance) {
+            left.distance = newDistance;
+          }
+        }
+
+        current.unvisited = false;
+
+        if (current.coordinates !== this.endCell) {
+          let smallestDistance = 999999;
+          let newCurrent = false;
+          unvisited.forEach((gridRow, yy) => {
+            gridRow.forEach((gridCell, xx) => {
+              if (
+                gridCell.unvisited &&
+                gridCell.distance < smallestDistance
+              ) {
+                newCurrent = true;
+                smallestDistance = gridCell.distance;
+                current = gridCell;
+                x = xx;
+                y = yy;
+              }
+            });
+          });
+
+          if (newCurrent) {
+            calculateDistance(current, x, y);
+          } else {
+            this.resultMessage = 'No path found';
+            console.log(this.resultMessage);
+          }
+        } else {
+          this.resultMessage = `Distance to endCell is ${current.distance}`;
+          console.log(this.resultMessage);
+        }
+      };
+
+      calculateDistance(current, x, y);
     },
   },
 };
