@@ -2,8 +2,8 @@
   <div class="Grid">
     <GridCell
       :data="gridCell"
-      v-for="(gridCell, cellIndex) in flatGrid"
-      :key="`Grid__cell__${cellIndex}`"
+      v-for="gridCell in flatGrid"
+      :key="`Grid__cell__(${gridCell.coordinates})`"
       @click="$emit('click', gridCell)"
     />
   </div>
