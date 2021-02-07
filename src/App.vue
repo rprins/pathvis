@@ -60,6 +60,9 @@ export default {
         grid.push(subGrid);
       }
 
+      this.setStartCell(grid[9][2]);
+      this.setEndCell(grid[9][17]);
+
       this.grid = grid;
     },
 
@@ -94,12 +97,10 @@ export default {
         if (this.startCell === cell.coordinates) {
           this.startCell = '';
         } else {
-          cell.tile = 'START';
-          this.startCell = cell.coordinates;
+          this.setStartCell(cell);
         }
       } else {
-        cell.tile = 'START';
-        this.startCell = cell.coordinates;
+        this.setStartCell(cell);
       }
     },
 
@@ -115,17 +116,25 @@ export default {
         if (this.endCell === cell.coordinates) {
           this.endCell = '';
         } else {
-          cell.tile = 'END';
-          this.endCell = cell.coordinates;
+          this.setEndCell(cell);
         }
       } else {
-        cell.tile = 'END';
-        this.endCell = cell.coordinates;
+        this.setEndCell(cell);
       }
     },
 
     resetCell(coordinates) {
       this.grid[coordinates[0]][coordinates[1]].tile = 'NONE';
+    },
+
+    setStartCell(cell) {
+      cell.tile = 'START';
+      this.startCell = cell.coordinates;
+    },
+
+    setEndCell(cell) {
+      cell.tile = 'END';
+      this.endCell = cell.coordinates;
     },
 
     handleMouseDown() {
