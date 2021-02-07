@@ -1,5 +1,10 @@
 <template>
-  <div :class="computedClass" @click="$emit('click')">
+  <div
+    :class="computedClass"
+    @click.exact="$emit('click')"
+    @click.ctrl.exact="$emit('ctrlClick')"
+    @click.alt.exact="$emit('altClick')"
+  >
     {{ data.coordinates }}
   </div>
 </template>
@@ -16,8 +21,18 @@ export default {
     computedClass() {
       let classes = ['GridCell'];
 
-      if (this.data.tile === 'WALL') {
-        classes.push('GridCell--wall');
+      switch (this.data.tile) {
+        case 'WALL':
+          classes.push('GridCell--wall');
+          break;
+
+        case 'START':
+          classes.push('GridCell--start');
+          break;
+
+        case 'END':
+          classes.push('GridCell--end');
+          break;
       }
 
       return classes.join(' ');
@@ -39,6 +54,18 @@ export default {
     background: black;
     color: white;
     border: 1px solid black;
+  }
+
+  &--start {
+    background: red;
+    color: white;
+    border: 1px solid red;
+  }
+
+  &--end {
+    background: green;
+    color: white;
+    border: 1px solid green;
   }
 }
 </style>

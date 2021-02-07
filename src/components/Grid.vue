@@ -5,6 +5,8 @@
       v-for="gridCell in flatGrid"
       :key="`Grid__cell__(${gridCell.coordinates})`"
       @click="$emit('click', gridCell)"
+      @ctrlClick="$emit('ctrlClick', gridCell)"
+      @altClick="$emit('altClick', gridCell)"
     />
   </div>
 </template>

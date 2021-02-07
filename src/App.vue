@@ -1,6 +1,11 @@
 <template>
   <div id="app">
-    <Grid :grid="grid" @click="handleCellClick" />
+    <Grid
+      :grid="grid"
+      @click="handleCellClick"
+      @ctrlClick="handleCellCtrlClick"
+      @altClick="handleCellAltClick"
+    />
   </div>
 </template>
 
@@ -18,6 +23,9 @@ export default {
       gridWidth: 20,
       gridHeight: 20,
       grid: [],
+
+      startCell: '',
+      endCell: '',
     };
   },
 
@@ -45,13 +53,35 @@ export default {
     },
 
     handleCellClick(cell) {
-      const coordinates = cell.coordinates.split(',');
-
       if (cell.tile === 'NONE') {
-        this.grid[coordinates[0]][coordinates[1]].tile = 'WALL';
+        cell.tile = 'WALL';
       } else if (cell.tile === 'WALL') {
-        this.grid[coordinates[0]][coordinates[1]].tile = 'NONE';
+        cell.tile = 'NONE';
       }
+    },
+
+    handleCellCtrlClick(cell) {
+      cell.tile = 'START';
+
+      if (this.startCell !== '') {
+        this.resetCell(this.startCell.split(','));
+      }
+
+      this.startCell = cell.coordinates;
+    },
+
+    handleCellAltClick(cell) {
+      cell.tile = 'END';
+
+      if (this.endCell !== '') {
+        this.resetCell(this.endCell.split(','));
+      }
+
+      this.endCell = cell.coordinates;
+    },
+
+    resetCell(coordinates) {
+      this.grid[coordinates[0]][coordinates[1]].tile = 'NONE';
     },
   },
 };
