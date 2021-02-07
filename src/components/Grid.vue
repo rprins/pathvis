@@ -1,9 +1,10 @@
 <template>
   <div class="Grid">
     <GridCell
-      :type="gridCell"
+      :data="gridCell"
       v-for="(gridCell, cellIndex) in flatGrid"
       :key="`Grid__cell__${cellIndex}`"
+      @click="$emit('click', gridCell)"
     />
   </div>
 </template>

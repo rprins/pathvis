@@ -1,14 +1,26 @@
 <template>
-  <div class="GridCell">
-    {{ type }}
+  <div :class="computedClass" @click="$emit('click')">
+    {{ data.coordinates }}
   </div>
 </template>
 
 <script>
 export default {
   props: {
-    type: {
-      default: null,
+    data: {
+      default: {},
+    },
+  },
+
+  computed: {
+    computedClass() {
+      let classes = ['GridCell'];
+
+      if (this.data.tile === 'WALL') {
+        classes.push('GridCell--wall');
+      }
+
+      return classes.join(' ');
     },
   },
 };
@@ -19,5 +31,14 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+
+  background: white;
+  border: 1px solid #ccc;
+
+  &--wall {
+    background: black;
+    color: white;
+    border: 1px solid black;
+  }
 }
 </style>

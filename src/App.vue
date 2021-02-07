@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <Grid :grid="grid" />
+    <Grid :grid="grid" @click="handleCellClick" />
   </div>
 </template>
 
@@ -28,15 +28,30 @@ export default {
   methods: {
     init() {
       let grid = [];
-      const subGrid = [];
+
       for (let ii = 0; ii < this.gridWidth; ii++) {
-        subGrid.push('null');
-      }
-      for (let ii = 0; ii < this.gridHeight; ii++) {
+        let subGrid = [];
+        for (let jj = 0; jj < this.gridHeight; jj++) {
+          subGrid.push({
+            tile: 'NONE',
+            coordinates: `${ii},${jj}`,
+          });
+        }
+
         grid.push(subGrid);
       }
 
       this.grid = grid;
+    },
+
+    handleCellClick(cell) {
+      const coordinates = cell.coordinates.split(',');
+
+      if (cell.tile === 'NONE') {
+        this.grid[coordinates[0]][coordinates[1]].tile = 'WALL';
+      } else if (cell.tile === 'WALL') {
+        this.grid[coordinates[0]][coordinates[1]].tile = 'NONE';
+      }
     },
   },
 };
@@ -55,6 +70,7 @@ body {
   text-align: center;
   color: #2c3e50;
   height: 100vh;
+  background: #eee;
 
   display: flex;
   align-items: center;
