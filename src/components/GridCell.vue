@@ -6,7 +6,14 @@
     @click.alt.exact="$emit('altClick')"
     @mouseover.exact="$emit('mouseover')"
   >
-    {{ data.coordinates }}
+    <template v-if="debug">
+      <template v-if="data.distance && data.distance !== 999999">
+        {{ data.distance }}
+        <small>{{ data.coordinates }}</small>
+      </template>
+
+      <small>{{ data.tile }}</small>
+    </template>
   </div>
 </template>
 
@@ -15,6 +22,11 @@ export default {
   props: {
     data: {
       default: {},
+    },
+
+    debug: {
+      type: Boolean,
+      default: false,
     },
   },
 
@@ -34,6 +46,10 @@ export default {
         case 'END':
           classes.push('GridCell--end');
           break;
+
+        case 'PATH':
+          classes.push('GridCell--path');
+          break;
       }
 
       return classes.join(' ');
@@ -47,6 +63,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
 
   cursor: pointer;
   user-select: none;
@@ -72,6 +89,12 @@ export default {
     background: green;
     color: white;
     border: 1px solid green;
+  }
+
+  &--path {
+    background: blue;
+    color: white;
+    border: 1px solid blue;
   }
 }
 </style>

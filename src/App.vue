@@ -6,6 +6,8 @@
       <br />
       <span @click="dijkstra">Start Dijkstra</span>
       <br /><br />
+      <span @click="init">Reset</span>
+      <br /><br />
       <div>Result message: {{ resultMessage }}</div>
     </div>
 
@@ -60,6 +62,8 @@ export default {
           subGrid.push({
             tile: 'NONE',
             coordinates: `${xx},${yy}`,
+            unvisited: true,
+            distance: 999999,
           });
         }
 
@@ -70,9 +74,13 @@ export default {
 
       this.setStartCell(this.getCell(2, 9));
       this.setEndCell(this.getCell(17, 9));
+
+      this.dijkstra();
     },
 
     handleCellClick(cell) {
+      this.removePath();
+
       if (this.mouseDown && this.mouseDownInitialCellTile === '') {
         this.mouseDownInitialCellTile =
           cell.tile === 'WALL' ? 'NONE' : 'WALL';
@@ -89,6 +97,8 @@ export default {
       } else if (cell.tile === 'WALL') {
         cell.tile = 'NONE';
       }
+
+      if (!this.mouseDown) this.dijkstra();
     },
 
     handleCellCtrlClick(cell) {
@@ -150,6 +160,8 @@ export default {
     handleMouseUp() {
       this.mouseDown = false;
       this.mouseDownInitialCellTile = '';
+
+      this.dijkstra();
     },
 
     getCell(x, y) {
@@ -176,11 +188,10 @@ export default {
       this.grid.forEach(gridRow => {
         let subGrid = [];
         gridRow.forEach(gridCell => {
-          subGrid.push({
-            coordinates: gridCell.coordinates,
-            unvisited: gridCell.tile !== 'WALL',
-            distance: DISTANCE,
-          });
+          let newCell = Object.assign({}, gridCell);
+          newCell.unvisited = gridCell.tile !== 'WALL';
+          newCell.distance = DISTANCE;
+          subGrid.push(newCell);
         });
         unvisited.push(subGrid);
       });
@@ -253,13 +264,121 @@ export default {
             this.resultMessage = 'No path found';
             console.log(this.resultMessage);
           }
+
+          this.$nextTick(() => {
+            this.grid = unvisited;
+          });
         } else {
           this.resultMessage = `Distance to endCell is ${current.distance}`;
           console.log(this.resultMessage);
+
+          this.$nextTick(() => {
+            this.grid = unvisited;
+            this.calculatePath(unvisited);
+          });
         }
       };
 
       calculateDistance(current, x, y);
+    },
+
+    calculatePath(grid) {
+      let path = [];
+      let currentDistance = 0;
+
+      const endCellCoordinates = this.endCell.split(',');
+      let current =
+        grid[parseInt(endCellCoordinates[1])][
+          parseInt(endCellCoordinates[0])
+        ];
+
+      const loop = (grid, current) => {
+        currentDistance = current.distance;
+        if (currentDistance < 2) return;
+
+        const coordinates = current.coordinates.split(',');
+        let x = parseInt(coordinates[0]);
+        let y = parseInt(coordinates[1]);
+
+        // Find neighbour node where node.distance === current.distance - 1
+        let top = null;
+        let right = null;
+        let bottom = null;
+        let left = null;
+
+        if (y - 1 > -1) top = grid[y - 1][x];
+        if (x + 1 < this.gridWidth) right = grid[y][x + 1];
+        if (y + 1 < this.gridHeight) bottom = grid[y + 1][x];
+        if (x - 1 > -1) left = grid[y][x - 1];
+
+        let smallestDistance = currentDistance;
+        if (
+          top &&
+          top.distance < smallestDistance &&
+          top.tile !== 'WALL'
+        ) {
+          console.log('top');
+          smallestDistance = top.distance;
+          current = top;
+        } else if (
+          right &&
+          right.distance < smallestDistance &&
+          right.tile !== 'WALL'
+        ) {
+          console.log('right');
+          smallestDistance = right.distance;
+          current = right;
+        } else if (
+          bottom &&
+          bottom.distance < smallestDistance &&
+          bottom.tile !== 'WALL'
+        ) {
+          console.log('bottom');
+          smallestDistance = bottom.distance;
+          current = bottom;
+        } else if (
+          left &&
+          left.distance < smallestDistance &&
+          left.tile !== 'WALL'
+        ) {
+          console.log('left');
+          smallestDistance = left.distance;
+          current = left;
+        }
+
+        // Add node to path
+        path.push(current);
+
+        loop(grid, current);
+      };
+
+      loop(grid, current);
+
+      this.drawPath(path);
+    },
+
+    drawPath(path) {
+      this.removePath();
+      let newGrid = this.grid;
+
+      path.forEach(cell => {
+        const splitCoordinates = cell.coordinates.split(',');
+        newGrid[splitCoordinates[1]][splitCoordinates[0]].tile =
+          'PATH';
+      });
+
+      this.$nextTick(() => {
+        this.grid = newGrid;
+      });
+    },
+
+    removePath() {
+      this.grid.forEach(gridCol => {
+        gridCol.forEach(gridCell => {
+          gridCell.tile =
+            gridCell.tile === 'PATH' ? 'NONE' : gridCell.tile;
+        });
+      });
     },
   },
 };
