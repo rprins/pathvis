@@ -13,6 +13,8 @@
 
     <Grid
       :grid="grid"
+      :grid-width="gridWidth"
+      :grid-height="gridHeight"
       :mouse-down="mouseDown"
       @click="handleCellClick"
       @ctrlClick="handleCellCtrlClick"
@@ -77,8 +79,15 @@ export default {
 
       this.grid = grid;
 
-      this.setStartCell(this.getCell(4, 9));
-      this.setEndCell(this.getCell(45, 9));
+      this.setStartCell(
+        this.getCell(4, Math.floor(this.gridHeight / 2)),
+      );
+      this.setEndCell(
+        this.getCell(
+          this.gridWidth - 5,
+          Math.floor(this.gridHeight / 2),
+        ),
+      );
 
       this.dijkstra();
     },

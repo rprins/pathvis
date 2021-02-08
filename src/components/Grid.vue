@@ -1,6 +1,7 @@
 <template>
   <div
     class="Grid"
+    :style="styleObject"
     @mousedown="$emit('mousedown')"
     @mouseup="$emit('mouseup')"
   >
@@ -30,6 +31,16 @@ export default {
       required: true,
     },
 
+    gridWidth: {
+      type: Number,
+      required: true,
+    },
+
+    gridHeight: {
+      type: Number,
+      required: true,
+    },
+
     mouseDown: {
       type: Boolean,
       default: false,
@@ -49,7 +60,10 @@ export default {
     },
 
     styleObject() {
-      return {};
+      return {
+        gridTemplateColumns: `repeat(${this.gridWidth}, 20px)`,
+        gridTemplateRows: `repeat(${this.gridHeight}, 20px)`,
+      };
     },
   },
 
@@ -66,7 +80,7 @@ export default {
 <style lang="scss" scoped>
 .Grid {
   display: grid;
-  grid-template-columns: repeat(50, 20px);
-  grid-template-rows: repeat(20, 20px);
+  // grid-template-columns: repeat(50, 20px);
+  // grid-template-rows: repeat(20, 20px);
 }
 </style>
