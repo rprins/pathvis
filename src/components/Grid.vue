@@ -66,7 +66,7 @@ export default {
 <style lang="scss" scoped>
 .Grid {
   display: grid;
-  grid-template-columns: repeat(20, 50px);
-  grid-template-rows: repeat(20, 50px);
+  grid-template-columns: repeat(50, 20px);
+  grid-template-rows: repeat(20, 20px);
 }
 </style>

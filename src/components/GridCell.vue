@@ -80,21 +80,21 @@ export default {
   }
 
   &--start {
-    background: red;
+    background: #b92828;
     color: white;
-    border: 1px solid red;
+    border: 1px solid #b92828;
   }
 
   &--end {
-    background: green;
+    background: #43c843;
     color: white;
-    border: 1px solid green;
+    border: 1px solid #43c843;
   }
 
   &--path {
-    background: blue;
+    background: #5cb3ff;
     color: white;
-    border: 1px solid blue;
+    border: 1px solid #5cb3ff;
   }
 }
 </style>

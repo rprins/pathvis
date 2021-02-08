@@ -34,7 +34,7 @@ export default {
 
   data() {
     return {
-      gridWidth: 20,
+      gridWidth: 50,
       gridHeight: 20,
       grid: [],
 
@@ -45,6 +45,11 @@ export default {
       mouseDownInitialCellTile: '',
 
       resultMessage: '',
+
+      pathDrawSpeed: 25,
+
+      drawing: false,
+      abortDrawing: false,
     };
   },
 
@@ -72,8 +77,8 @@ export default {
 
       this.grid = grid;
 
-      this.setStartCell(this.getCell(2, 9));
-      this.setEndCell(this.getCell(17, 9));
+      this.setStartCell(this.getCell(4, 9));
+      this.setEndCell(this.getCell(45, 9));
 
       this.dijkstra();
     },
@@ -98,7 +103,14 @@ export default {
         cell.tile = 'NONE';
       }
 
-      if (!this.mouseDown) this.dijkstra();
+      if (this.drawing) {
+        this.abortDrawing = true;
+        return;
+      }
+
+      if (!this.mouseDown) {
+        this.dijkstra();
+      }
     },
 
     handleCellCtrlClick(cell) {
@@ -160,8 +172,6 @@ export default {
     handleMouseUp() {
       this.mouseDown = false;
       this.mouseDownInitialCellTile = '';
-
-      this.dijkstra();
     },
 
     getCell(x, y) {
@@ -317,7 +327,6 @@ export default {
           top.distance < smallestDistance &&
           top.tile !== 'WALL'
         ) {
-          console.log('top');
           smallestDistance = top.distance;
           current = top;
         } else if (
@@ -325,7 +334,6 @@ export default {
           right.distance < smallestDistance &&
           right.tile !== 'WALL'
         ) {
-          console.log('right');
           smallestDistance = right.distance;
           current = right;
         } else if (
@@ -333,7 +341,6 @@ export default {
           bottom.distance < smallestDistance &&
           bottom.tile !== 'WALL'
         ) {
-          console.log('bottom');
           smallestDistance = bottom.distance;
           current = bottom;
         } else if (
@@ -341,7 +348,6 @@ export default {
           left.distance < smallestDistance &&
           left.tile !== 'WALL'
         ) {
-          console.log('left');
           smallestDistance = left.distance;
           current = left;
         }
@@ -354,22 +360,37 @@ export default {
 
       loop(grid, current);
 
+      path = path.reverse();
+
       this.drawPath(path);
     },
 
-    drawPath(path) {
-      this.removePath();
+    async drawPath(path) {
       let newGrid = this.grid;
 
-      path.forEach(cell => {
+      this.drawing = true;
+
+      for (let ii = 0; ii < path.length; ii++) {
+        if (this.abortDrawing) {
+          this.abortDrawing = false;
+          this.drawing = false;
+          this.dijkstra();
+          break;
+        }
+        let cell = path[ii];
         const splitCoordinates = cell.coordinates.split(',');
         newGrid[splitCoordinates[1]][splitCoordinates[0]].tile =
           'PATH';
-      });
 
-      this.$nextTick(() => {
-        this.grid = newGrid;
-      });
+        this.$nextTick(() => {
+          this.grid = newGrid;
+        });
+
+        await this.sleep(this.pathDrawSpeed);
+      }
+
+      this.abortDrawing = false;
+      this.drawing = false;
     },
 
     removePath() {
@@ -378,6 +399,12 @@ export default {
           gridCell.tile =
             gridCell.tile === 'PATH' ? 'NONE' : gridCell.tile;
         });
+      });
+    },
+
+    sleep(timeInMs) {
+      return new Promise(resolve => {
+        setTimeout(resolve, timeInMs);
       });
     },
   },
