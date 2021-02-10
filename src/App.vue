@@ -18,7 +18,6 @@
       :grid-height="gridHeight"
       :grid-size="gridSize"
       :mouse-down="mouseDown"
-      @click="handleCellClick"
       @shiftClick="handleCellShiftClick"
       @altClick="handleCellAltClick"
       @mousedown="handleMouseDown"
@@ -28,7 +27,6 @@
 </template>
 
 <script>
-/*eslint-disable*/
 import { throttle, debounce, lineRect } from '@/assets/js/helpers.js';
 
 import Grid from '@/components/Grid.vue';
@@ -119,37 +117,6 @@ export default {
           Math.floor(this.gridHeight / 2),
         ),
       );
-    },
-
-    handleCellClick(cell) {
-      return;
-      this.removePath();
-
-      if (this.mouseDown && this.mouseDownInitialCellTile === null) {
-        this.mouseDownInitialCellTile =
-          cell.tile === 'WALL' ? 'NONE' : 'WALL';
-      }
-
-      if (
-        this.mouseDownInitialCellTile !== null &&
-        cell.tile != 'START' &&
-        cell.tile != 'END'
-      ) {
-        cell.tile = this.mouseDownInitialCellTile;
-      } else if (cell.tile === 'NONE') {
-        cell.tile = 'WALL';
-      } else if (cell.tile === 'WALL') {
-        cell.tile = 'NONE';
-      }
-
-      if (this.drawing) {
-        this.abortDrawing = true;
-        return;
-      }
-
-      if (!this.mouseDown) {
-        this.dijkstra();
-      }
     },
 
     handleCellShiftClick(cell) {
@@ -272,7 +239,7 @@ export default {
       this.calculateAffectedCells();
     }, 50),
 
-    handleWindowResize: debounce(function(event) {
+    handleWindowResize: debounce(function() {
       if (this.drawing) this.abortDrawing = true;
 
       this.calculateGridSize();

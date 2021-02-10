@@ -9,7 +9,6 @@
       :data="gridCell"
       v-for="gridCell in flatGrid"
       :key="`Grid__cell__(${gridCell.coordinates})`"
-      @click="$emit('click', gridCell)"
       @shiftClick="$emit('shiftClick', gridCell)"
       @altClick="$emit('altClick', gridCell)"
     />
