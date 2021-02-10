@@ -12,12 +12,14 @@
     </div>
 
     <Grid
+      id="grid"
       :grid="grid"
       :grid-width="gridWidth"
       :grid-height="gridHeight"
+      :grid-size="gridSize"
       :mouse-down="mouseDown"
       @click="handleCellClick"
-      @ctrlClick="handleCellCtrlClick"
+      @shiftClick="handleCellShiftClick"
       @altClick="handleCellAltClick"
       @mousedown="handleMouseDown"
       @mouseup="handleMouseUp"
@@ -26,7 +28,78 @@
 </template>
 
 <script>
+/*eslint-disable*/
 import Grid from '@/components/Grid.vue';
+
+const throttle = (func, limit) => {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => (inThrottle = false), limit);
+    }
+  };
+};
+
+const lineLine = (x1, y1, x2, y2, x3, y3, x4, y4) => {
+  // calculate the distance to intersection point
+  const uA =
+    ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) /
+    ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+  const uB =
+    ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) /
+    ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+
+  // if uA and uB are between 0-1, lines are colliding
+  if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
+
+    return true;
+  }
+  return false;
+};
+
+const lineRect = (x1, y1, x2, y2, rx, ry, rw, rh) => {
+  // check if the line has hit any of the rectangle's sides
+  // uses the Line/Line function below
+  let left = lineLine(x1, y1, x2, y2, rx, ry, rx, ry + rh);
+  let right = lineLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh);
+  let top = lineLine(x1, y1, x2, y2, rx, ry, rx + rw, ry);
+  let bottom = lineLine(
+    x1,
+    y1,
+    x2,
+    y2,
+    rx,
+    ry + rh,
+    rx + rw,
+    ry + rh,
+  );
+
+  // if ANY of the above are true, the line
+  // has hit the rectangle
+  if (left || right || top || bottom) {
+    return true;
+  }
+  return false;
+};
+
+const pointRect = (px, py, rx, ry, rw, rh) => {
+  // is the point inside the rectangle's bounds?
+  if (
+    px >= rx && // right of the left edge AND
+    px <= rx + rw && // left of the right edge AND
+    py >= ry && // below the top AND
+    py <= ry + rh
+  ) {
+    // above the bottom
+    return true;
+  }
+  return false;
+};
+
 export default {
   name: 'App',
 
@@ -37,14 +110,18 @@ export default {
   data() {
     return {
       gridWidth: 50,
-      gridHeight: 20,
+      gridHeight: 40,
+      gridSize: 20,
+
       grid: [],
 
       startCell: '',
       endCell: '',
 
       mouseDown: false,
-      mouseDownInitialCellTile: '',
+      mouseDownInitialCellTile: null,
+      previousMousePosition: null,
+      currentMousePosition: null,
 
       resultMessage: '',
 
@@ -93,15 +170,16 @@ export default {
     },
 
     handleCellClick(cell) {
+      return;
       this.removePath();
 
-      if (this.mouseDown && this.mouseDownInitialCellTile === '') {
+      if (this.mouseDown && this.mouseDownInitialCellTile === null) {
         this.mouseDownInitialCellTile =
           cell.tile === 'WALL' ? 'NONE' : 'WALL';
       }
 
       if (
-        this.mouseDownInitialCellTile !== '' &&
+        this.mouseDownInitialCellTile !== null &&
         cell.tile != 'START' &&
         cell.tile != 'END'
       ) {
@@ -122,12 +200,15 @@ export default {
       }
     },
 
-    handleCellCtrlClick(cell) {
+    handleCellShiftClick(cell) {
       /*
         if startCell exists and you click the same cell: set cell to NONE and reset startCell
         if startCell exists and you click a different cell: and set cell to START and set startCell to new coordinates
         if startCell does not exist: set cell to START and set startCell to new coordinates
       */
+      if (this.drawing) this.abortDrawing = true;
+      this.removePath();
+
       if (this.startCell !== '') {
         this.resetCell(this.startCell.split(','));
 
@@ -139,6 +220,8 @@ export default {
       } else {
         this.setStartCell(cell);
       }
+
+      setTimeout(this.dijkstra, 100);
     },
 
     handleCellAltClick(cell) {
@@ -147,6 +230,9 @@ export default {
         if endCell exists and you click a different cell: and set cell to END and set endCell to new coordinates
         if endCell does not exist: set cell to END and set endCell to new coordinates
       */
+     if (this.drawing) this.abortDrawing = true;
+      this.removePath();
+
       if (this.endCell !== '') {
         this.resetCell(this.endCell.split(','));
 
@@ -158,6 +244,8 @@ export default {
       } else {
         this.setEndCell(cell);
       }
+
+      setTimeout(this.dijkstra, 100);
     },
 
     resetCell(coordinates) {
@@ -174,32 +262,150 @@ export default {
       this.endCell = cell.coordinates;
     },
 
-    handleMouseDown() {
+    handleMouseDown(event) {
       this.mouseDown = true;
+
+      document
+        .getElementById('grid')
+        .addEventListener('mousemove', this.handleMouseMove);
+
+      this.handleSingleClick(event);
+
+      this.removePath();
+
+      if (this.drawing) {
+        this.abortDrawing = true;
+        return;
+      }
     },
 
     handleMouseUp() {
       this.mouseDown = false;
-      this.mouseDownInitialCellTile = '';
+      this.mouseDownInitialCellTile = null;
+
+      document
+        .getElementById('grid')
+        .removeEventListener('mousemove', this.handleMouseMove);
+
+      this.previousMousePosition = null;
+      this.currentMousePosition = null;
+
+      this.removePath();
+
+      if (this.drawing) {
+        this.abortDrawing = true;
+        return;
+      }
+
+      this.dijkstra();
+    },
+
+    setMousePosition(event) {
+      const grid = document.getElementById('grid');
+      const gridX = grid.offsetLeft;
+      const gridY = grid.offsetTop;
+
+      const mouseX = event.x || event.clientX;
+      const mouseY = event.y || event.clientY;
+
+      this.previousMousePosition = this.currentMousePosition;
+      this.currentMousePosition = {
+        x: mouseX - gridX,
+        y: mouseY - gridY,
+      };
+    },
+
+    handleMouseMove: throttle(function(event) {
+      this.setMousePosition(event);
+      this.calculateAffectedCells();
+    }, 50),
+
+    calculateAffectedCells() {
+      if (this.previousMousePosition === null) return;
+
+      let mouseX1 = this.previousMousePosition.x;
+      let mouseY1 = this.previousMousePosition.y;
+      let mouseX2 = this.currentMousePosition.x;
+      let mouseY2 = this.currentMousePosition.y;
+
+      let posY = this.gridSize;
+      let posX = 0;
+
+      for (let yy = 0; yy < this.gridHeight; yy++) {
+        posX = 0;
+        for (let xx = 0; xx < this.gridWidth; xx++) {
+          let lineX1 = posX;
+          let lineY1 = posY - this.gridSize;
+
+          const isIntersecting = lineRect(
+            mouseX1,
+            mouseY1,
+            mouseX2,
+            mouseY2,
+            lineX1,
+            lineY1,
+            this.gridSize,
+            this.gridSize,
+          );
+
+          if (isIntersecting) {
+            this.setTile(
+              this.grid[yy][xx],
+              this.mouseDownInitialCellTile,
+            );
+          }
+
+          posX += this.gridSize;
+        }
+        posY += this.gridSize;
+      }
+    },
+
+    handleSingleClick(event) {
+      this.setMousePosition(event);
+
+      const mouseX = this.currentMousePosition.x;
+      const mouseY = this.currentMousePosition.y;
+
+      const gridX = Math.floor(mouseX / 20);
+      const gridY = Math.floor(mouseY / 20);
+
+      this.mouseDownInitialCellTile = this.grid[gridY][gridX].tile;
+
+      this.setTile(this.grid[gridY][gridX]);
     },
 
     getCell(x, y) {
       return this.grid[y][x];
     },
 
-    dijkstra() {
-      /*
-        Let the node at which we are starting be called the initial node. Let the distance of node Y be the distance from the initial node to Y. Dijkstra's algorithm will assign some initial distance values and will try to improve them step by step.
+    setTile(cell, type = null) {
+      if (cell.tile === 'START' || cell.tile === 'END') return;
 
-        1. Mark all nodes unvisited. Create a set of all the unvisited nodes called the unvisited set.
-        2. Assign to every node a tentative distance value: set it to zero for our initial node and to infinity for all other nodes. Set the initial node as current.[16]
-        3. For the current node, consider all of its unvisited neighbours and calculate their tentative distances through the current node. Compare the newly calculated tentative distance to the current assigned value and assign the smaller one. For example, if the current node A is marked with a distance of 6, and the edge connecting it with a neighbour B has length 2, then the distance to B through A will be 6 + 2 = 8. If B was previously marked with a distance greater than 8 then change it to 8. Otherwise, the current value will be kept.
-        4. When we are done considering all of the unvisited neighbours of the current node, mark the current node as visited and remove it from the unvisited set. A visited node will never be checked again.
-        5. If the destination node has been marked visited (when planning a route between two specific nodes) or if the smallest tentative distance among the nodes in the unvisited set is infinity (when planning a complete traversal; occurs when there is no connection between the initial node and remaining unvisited nodes), then stop. The algorithm has finished.
-        6. Otherwise, select the unvisited node that is marked with the smallest tentative distance, set it as the new "current node", and go back to step 3.
-        7. When planning a route, it is actually not necessary to wait until the destination node is "visited" as above: the algorithm can stop once the destination node has the smallest tentative distance among all "unvisited" nodes (and thus could be selected as the next "current").
-      */
+      if (type === null) {
+        if (cell.tile === 'NONE') cell.tile = 'WALL';
+        else if (cell.tile === 'WALL') cell.tile = 'NONE';
+      } else if (type === 'NONE') {
+        cell.tile = 'WALL';
+      } else if (type === 'WALL') {
+        cell.tile = 'NONE';
+      }
+    },
+
+    /*
+      Let the node at which we are starting be called the initial node. Let the distance of node Y be the distance from the initial node to Y. Dijkstra's algorithm will assign some initial distance values and will try to improve them step by step.
+
+      1. Mark all nodes unvisited. Create a set of all the unvisited nodes called the unvisited set.
+      2. Assign to every node a tentative distance value: set it to zero for our initial node and to infinity for all other nodes. Set the initial node as current.[16]
+      3. For the current node, consider all of its unvisited neighbours and calculate their tentative distances through the current node. Compare the newly calculated tentative distance to the current assigned value and assign the smaller one. For example, if the current node A is marked with a distance of 6, and the edge connecting it with a neighbour B has length 2, then the distance to B through A will be 6 + 2 = 8. If B was previously marked with a distance greater than 8 then change it to 8. Otherwise, the current value will be kept.
+      4. When we are done considering all of the unvisited neighbours of the current node, mark the current node as visited and remove it from the unvisited set. A visited node will never be checked again.
+      5. If the destination node has been marked visited (when planning a route between two specific nodes) or if the smallest tentative distance among the nodes in the unvisited set is infinity (when planning a complete traversal; occurs when there is no connection between the initial node and remaining unvisited nodes), then stop. The algorithm has finished.
+      6. Otherwise, select the unvisited node that is marked with the smallest tentative distance, set it as the new "current node", and go back to step 3.
+      7. When planning a route, it is actually not necessary to wait until the destination node is "visited" as above: the algorithm can stop once the destination node has the smallest tentative distance among all "unvisited" nodes (and thus could be selected as the next "current").
+    */
+    dijkstra() {
       if (this.startCell === '') return;
+      this.removePath();
 
       const DISTANCE = 999999;
 
@@ -383,7 +589,6 @@ export default {
         if (this.abortDrawing) {
           this.abortDrawing = false;
           this.drawing = false;
-          this.dijkstra();
           break;
         }
         let cell = path[ii];

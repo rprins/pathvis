@@ -2,17 +2,16 @@
   <div
     class="Grid"
     :style="styleObject"
-    @mousedown="$emit('mousedown')"
-    @mouseup="$emit('mouseup')"
+    @mousedown.exact="$emit('mousedown', $event)"
+    @mouseup.exact="$emit('mouseup')"
   >
     <GridCell
       :data="gridCell"
       v-for="gridCell in flatGrid"
       :key="`Grid__cell__(${gridCell.coordinates})`"
       @click="$emit('click', gridCell)"
-      @ctrlClick="$emit('ctrlClick', gridCell)"
+      @shiftClick="$emit('shiftClick', gridCell)"
       @altClick="$emit('altClick', gridCell)"
-      @mouseover="handleMouseOver(gridCell)"
     />
   </div>
 </template>
@@ -41,6 +40,11 @@ export default {
       required: true,
     },
 
+    gridSize: {
+      type: Number,
+      required: true,
+    },
+
     mouseDown: {
       type: Boolean,
       default: false,
@@ -61,17 +65,9 @@ export default {
 
     styleObject() {
       return {
-        gridTemplateColumns: `repeat(${this.gridWidth}, 20px)`,
-        gridTemplateRows: `repeat(${this.gridHeight}, 20px)`,
+        gridTemplateColumns: `repeat(${this.gridWidth}, ${this.gridSize}px)`,
+        gridTemplateRows: `repeat(${this.gridHeight}, ${this.gridSize}px)`,
       };
-    },
-  },
-
-  methods: {
-    handleMouseOver(cell) {
-      if (this.mouseDown) {
-        this.$emit('click', cell);
-      }
     },
   },
 };
@@ -80,7 +76,5 @@ export default {
 <style lang="scss" scoped>
 .Grid {
   display: grid;
-  // grid-template-columns: repeat(50, 20px);
-  // grid-template-rows: repeat(20, 20px);
 }
 </style>

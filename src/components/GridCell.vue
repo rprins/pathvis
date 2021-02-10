@@ -2,7 +2,7 @@
   <div
     :class="computedClass"
     @click.exact="$emit('click')"
-    @click.ctrl.exact="$emit('ctrlClick')"
+    @click.shift.exact="$emit('shiftClick')"
     @click.alt.exact="$emit('altClick')"
     @mouseover.exact="$emit('mouseover')"
   >
