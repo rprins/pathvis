@@ -44,6 +44,22 @@ const throttle = (func, limit) => {
   };
 };
 
+const debounce = (func, wait, immediate) => {
+  var timeout;
+  return function() {
+    var context = this,
+      args = arguments;
+    var later = function() {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    var callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+};
+
 const lineLine = (x1, y1, x2, y2, x3, y3, x4, y4) => {
   // calculate the distance to intersection point
   const uA =
@@ -55,7 +71,6 @@ const lineLine = (x1, y1, x2, y2, x3, y3, x4, y4) => {
 
   // if uA and uB are between 0-1, lines are colliding
   if (uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1) {
-
     return true;
   }
   return false;
@@ -136,10 +151,29 @@ export default {
 
   mounted() {
     this.init();
+    window.addEventListener('resize', this.handleWindowResize);
+  },
+
+  destroyed() {
+    window.removeEventListener('resize', this.handleWindowResize);
   },
 
   methods: {
     init() {
+      this.calculateGridSize();
+      this.resetGrid();
+      this.dijkstra();
+    },
+
+    calculateGridSize() {
+      // Calculate grid width and height by window size
+      this.gridWidth = Math.floor(window.innerWidth / this.gridSize);
+      this.gridHeight = Math.floor(
+        window.innerHeight / this.gridSize,
+      );
+    },
+
+    resetGrid() {
       let grid = [];
 
       for (let yy = 0; yy < this.gridHeight; yy++) {
@@ -167,8 +201,6 @@ export default {
           Math.floor(this.gridHeight / 2),
         ),
       );
-
-      this.dijkstra();
     },
 
     handleCellClick(cell) {
@@ -232,7 +264,7 @@ export default {
         if endCell exists and you click a different cell: and set cell to END and set endCell to new coordinates
         if endCell does not exist: set cell to END and set endCell to new coordinates
       */
-     if (this.drawing) this.abortDrawing = true;
+      if (this.drawing) this.abortDrawing = true;
       this.removePath();
 
       if (this.endCell !== '') {
@@ -321,6 +353,14 @@ export default {
       this.setMousePosition(event);
       this.calculateAffectedCells();
     }, 50),
+
+    handleWindowResize: debounce(function(event) {
+      if (this.drawing) this.abortDrawing = true;
+
+      this.calculateGridSize();
+      this.resetGrid();
+      this.dijkstra();
+    }, 300),
 
     calculateAffectedCells() {
       if (this.previousMousePosition === null) return;

@@ -65,8 +65,8 @@ export default {
 
     styleObject() {
       return {
-        gridTemplateColumns: `repeat(${this.gridWidth}, ${this.gridSize}px)`,
-        gridTemplateRows: `repeat(${this.gridHeight}, ${this.gridSize}px)`,
+        gridTemplateColumns: `repeat(${this.gridWidth}, auto)`,
+        gridTemplateRows: `repeat(${this.gridHeight}, auto)`,
       };
     },
   },
@@ -75,6 +75,8 @@ export default {
 
 <style lang="scss" scoped>
 .Grid {
+  height: 100vh;
+  width: 100vw;
   display: grid;
 }
 </style>
