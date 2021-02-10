@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="debug">
+    <div class="debug" v-if="showDebugger">
       startCell: {{ startCell }}<br />
       endCell: {{ endCell }} <br />
       <br />
@@ -129,6 +129,8 @@ export default {
 
       drawing: false,
       abortDrawing: false,
+
+      showDebugger: false,
     };
   },
 
